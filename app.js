@@ -46,12 +46,63 @@ window.openDetailModal = (task) => {
 };
 
 // =======================================================
+// SESSION & NAVIGATION
+// =======================================================
+window.handleLogin = function() {
+    const name = document.getElementById('usernameInput').value.trim();
+    if (!name) return alert('Nama wajib diisi!');
+    localStorage.setItem('worker_name', name);
+    currentWorker = name;
+    checkSession();
+};
+
+window.handleLogout = function() {
+    localStorage.removeItem('worker_name');
+    window.location.reload(); 
+};
+
+function checkSession() {
+    const worker = localStorage.getItem('worker_name');
+    if (worker) {
+        document.getElementById('login-panel').classList.add('hidden');
+        document.getElementById('main-tracker').classList.remove('hidden');
+        document.getElementById('currentUserDisplay').innerText = worker + (isMasterUser() ? " (Master)" : "");
+        document.getElementById('avatarLetter').innerText = worker.charAt(0).toUpperCase();
+        fetchTasks();
+    }
+}
+
+window.switchTab = function(tabName) {
+    const boardsView = document.getElementById('boards-view-container');
+    const projectsPage = document.getElementById('projects-page');
+    const customTitle = document.getElementById('customTitle');
+
+    if (tabName === 'boards') {
+        boardsView.classList.remove('hidden');
+        projectsPage.classList.add('hidden');
+        customTitle.innerText = "Dashboards";
+        fetchTasks();
+    } else {
+        boardsView.classList.add('hidden');
+        projectsPage.classList.remove('hidden');
+        customTitle.innerText = "All Projects";
+        fetchProjects();
+    }
+};
+
+// =======================================================
 // FETCH & RENDER
 // =======================================================
 async function fetchTasks() {
     const { data: tasks, error } = await supabaseClient.from('tasks').select('*').order('created_at', { ascending: false });
     if (error) console.error("Error:", error);
     else renderTasks(tasks);
+}
+
+async function fetchProjects() {
+    const { data: tasks, error } = await supabaseClient.from('tasks').select('*').order('created_at', { ascending: false });
+    if (error) console.error("Error:", error);
+    else renderVerticalProjects(tasks);
 }
 
 function renderTasks(tasks) {
@@ -61,7 +112,6 @@ function renderTasks(tasks) {
     tasks.forEach(task => {
         const card = document.createElement('div');
         card.className = "bg-white p-4 rounded-xl border shadow-sm";
-        // Stringify aman untuk data JSON
         const safeTask = JSON.stringify(task).replace(/"/g, '&quot;');
         
         card.innerHTML = `
@@ -75,7 +125,6 @@ function renderTasks(tasks) {
                     <input type="text" id="master-input-${task.id}" value="${task.master_notes || ''}" class="w-full text-[10px] p-1 border rounded mb-1" placeholder="Arahan master...">
                     <button onclick="submitMasterNote(${task.id})" class="text-[9px] bg-amber-500 text-white px-2 py-0.5 rounded w-full">Simpan Arahan</button>
                 ` : `<p class="text-[10px] text-slate-400 italic mb-1">${task.master_notes ? 'Master: ' + task.master_notes : ''}</p>`}
-                
                 <button onclick="updateStatus(${task.id}, '${task.status === 'todo' ? 'in_progress' : task.status === 'in_progress' ? 'done' : 'todo'}')" class="mt-2 w-full text-[10px] font-bold text-blue-600 bg-blue-50 py-1 rounded">Next →</button>
             </div>
         `;
@@ -83,26 +132,15 @@ function renderTasks(tasks) {
     });
 }
 
-// =======================================================
-// LOGIN & SESSION
-// =======================================================
-window.handleLogin = function() {
-    const name = document.getElementById('usernameInput').value.trim();
-    if (!name) return alert('Nama wajib diisi!');
-    localStorage.setItem('worker_name', name);
-    currentWorker = name;
-    checkSession();
-};
-
-function checkSession() {
-    const worker = localStorage.getItem('worker_name');
-    if (worker) {
-        document.getElementById('login-panel').classList.add('hidden');
-        document.getElementById('main-tracker').classList.remove('hidden');
-        document.getElementById('currentUserDisplay').innerText = worker;
-        document.getElementById('avatarLetter').innerText = worker.charAt(0).toUpperCase();
-        fetchTasks();
-    }
+function renderVerticalProjects(tasks) {
+    const container = document.getElementById('projects-vertical-list');
+    if(!container) return;
+    container.innerHTML = tasks.map(t => `
+        <div class="bg-white p-4 rounded-xl border flex justify-between items-center">
+            <p class="font-bold text-sm">${t.title}</p>
+            <span class="text-[10px] bg-slate-100 px-2 py-1 rounded">${t.worker_name || 'Anon'}</span>
+        </div>
+    `).join('');
 }
 
 window.updateStatus = async (taskId, newStatus) => {
