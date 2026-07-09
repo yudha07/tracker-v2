@@ -5,13 +5,16 @@ const SUPABASE_URL = "https://bawlxbtnocmangcblngu.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_ZZvJjet_A_XfGmqfNJhPOg_-P3z_snJ"; 
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-let currentWorker = localStorage.getItem('worker_name') || '';
+
+// Fungsi helper untuk mendapatkan user yang login
+const getStoredWorker = () => localStorage.getItem('worker_name') || '';
 
 const MASTER_USERS = ["yudha", "Yudha", "Jufri", "jufri", "danra", "Danra", "nadya", "Nadya"]; 
 
 function isMasterUser() {
-  if (!currentWorker) return false;
-  return MASTER_USERS.map(v => v.toLowerCase()).includes(currentWorker.toLowerCase());
+  const worker = getStoredWorker();
+  if (!worker) return false;
+  return MASTER_USERS.map(v => v.toLowerCase()).includes(worker.toLowerCase());
 }
 
 // =======================================================
@@ -26,7 +29,7 @@ window.submitModalTask = async () => {
     const deadline = document.getElementById('modalTaskDeadline').value;
     
     if (!title) return alert("Judul wajib diisi!");
-    const { error } = await supabaseClient.from('tasks').insert([{ title, notes, deadline, status: 'todo', worker_name: currentWorker }]);
+    const { error } = await supabaseClient.from('tasks').insert([{ title, notes, deadline, status: 'todo', worker_name: getStoredWorker() }]);
     if (error) alert(error.message);
     else { closeModal(); fetchTasks(); }
 };
@@ -52,8 +55,7 @@ window.handleLogin = function() {
     const name = document.getElementById('usernameInput').value.trim();
     if (!name) return alert('Nama wajib diisi!');
     localStorage.setItem('worker_name', name);
-    currentWorker = name;
-    checkSession();
+    window.location.reload(); // Reload agar sinkron
 };
 
 window.handleLogout = function() {
@@ -62,13 +64,23 @@ window.handleLogout = function() {
 };
 
 function checkSession() {
-    const worker = localStorage.getItem('worker_name');
+    const worker = getStoredWorker();
+    const loginPanel = document.getElementById('login-panel');
+    const mainTracker = document.getElementById('main-tracker');
+    
     if (worker) {
-        document.getElementById('login-panel').classList.add('hidden');
-        document.getElementById('main-tracker').classList.remove('hidden');
-        document.getElementById('currentUserDisplay').innerText = worker + (isMasterUser() ? " (Master)" : "");
-        document.getElementById('avatarLetter').innerText = worker.charAt(0).toUpperCase();
+        if (loginPanel) loginPanel.classList.add('hidden');
+        if (mainTracker) mainTracker.classList.remove('hidden');
+        
+        const userDisplay = document.getElementById('currentUserDisplay');
+        const avatarLetter = document.getElementById('avatarLetter');
+        if (userDisplay) userDisplay.innerText = worker + (isMasterUser() ? " (Master)" : "");
+        if (avatarLetter) avatarLetter.innerText = worker.charAt(0).toUpperCase();
+        
         fetchTasks();
+    } else {
+        if (loginPanel) loginPanel.classList.remove('hidden');
+        if (mainTracker) mainTracker.classList.add('hidden');
     }
 }
 
@@ -148,4 +160,5 @@ window.updateStatus = async (taskId, newStatus) => {
     fetchTasks();
 };
 
-document.addEventListener('DOMContentLoaded', checkSession);
+// Pastikan skrip berjalan setelah halaman selesai dimuat sepenuhnya
+window.addEventListener('load', checkSession);
