@@ -5,20 +5,18 @@ const SUPABASE_URL = "https://bawlxbtnocmangcblngu.supabase.co";
 const SUPABASE_ANON_KEY = "sb_publishable_ZZvJjet_A_XfGmqfNJhPOg_-P3z_snJ"; 
 
 const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-// Fungsi helper untuk mendapatkan user yang login
 const getStoredWorker = () => localStorage.getItem('worker_name') || '';
 
 const MASTER_USERS = ["yudha", "Yudha", "Jufri", "jufri", "danra", "Danra", "nadya", "Nadya"]; 
 
 function isMasterUser() {
-  const worker = getStoredWorker();
-  if (!worker) return false;
-  return MASTER_USERS.map(v => v.toLowerCase()).includes(worker.toLowerCase());
+    const worker = getStoredWorker();
+    if (!worker) return false;
+    return MASTER_USERS.map(v => v.toLowerCase()).includes(worker.toLowerCase());
 }
 
 // =======================================================
-// MODAL CONTROLLER
+// MODAL & UI CONTROLLERS
 // =======================================================
 window.openModal = () => document.getElementById('taskModal').classList.remove('hidden');
 window.closeModal = () => document.getElementById('taskModal').classList.add('hidden');
@@ -29,7 +27,9 @@ window.submitModalTask = async () => {
     const deadline = document.getElementById('modalTaskDeadline').value;
     
     if (!title) return alert("Judul wajib diisi!");
-    const { error } = await supabaseClient.from('tasks').insert([{ title, notes, deadline, status: 'todo', worker_name: getStoredWorker() }]);
+    const { error } = await supabaseClient.from('tasks').insert([{ 
+        title, notes, deadline, status: 'todo', worker_name: getStoredWorker() 
+    }]);
     if (error) alert(error.message);
     else { closeModal(); fetchTasks(); }
 };
@@ -41,7 +41,8 @@ window.submitMasterNote = async (taskId) => {
     else alert("Arahan disimpan!");
 };
 
-window.openDetailModal = (task) => {
+window.openDetailModal = (encodedTask) => {
+    const task = JSON.parse(atob(encodedTask));
     document.getElementById('detailTitle').innerText = task.title;
     document.getElementById('detailNotes').innerText = task.notes || '-';
     document.getElementById('detailMasterNotes').innerText = task.master_notes || 'Belum ada arahan.';
@@ -51,14 +52,14 @@ window.openDetailModal = (task) => {
 // =======================================================
 // SESSION & NAVIGATION
 // =======================================================
-window.handleLogin = function() {
+window.handleLogin = () => {
     const name = document.getElementById('usernameInput').value.trim();
     if (!name) return alert('Nama wajib diisi!');
     localStorage.setItem('worker_name', name);
-    window.location.reload(); // Reload agar sinkron
+    window.location.reload();
 };
 
-window.handleLogout = function() {
+window.handleLogout = () => {
     localStorage.removeItem('worker_name');
     window.location.reload(); 
 };
@@ -71,20 +72,15 @@ function checkSession() {
     if (worker) {
         if (loginPanel) loginPanel.classList.add('hidden');
         if (mainTracker) mainTracker.classList.remove('hidden');
-        
         const userDisplay = document.getElementById('currentUserDisplay');
         const avatarLetter = document.getElementById('avatarLetter');
         if (userDisplay) userDisplay.innerText = worker + (isMasterUser() ? " (Master)" : "");
         if (avatarLetter) avatarLetter.innerText = worker.charAt(0).toUpperCase();
-        
         fetchTasks();
-    } else {
-        if (loginPanel) loginPanel.classList.remove('hidden');
-        if (mainTracker) mainTracker.classList.add('hidden');
     }
 }
 
-window.switchTab = function(tabName) {
+window.switchTab = (tabName) => {
     const boardsView = document.getElementById('boards-view-container');
     const projectsPage = document.getElementById('projects-page');
     const customTitle = document.getElementById('customTitle');
@@ -124,15 +120,16 @@ function renderTasks(tasks) {
     tasks.forEach(task => {
         const card = document.createElement('div');
         card.className = "bg-white p-4 rounded-xl border shadow-sm";
-        const safeTask = JSON.stringify(task).replace(/"/g, '&quot;');
+        const encodedTask = btoa(JSON.stringify(task));
         
         card.innerHTML = `
-            <div class="cursor-pointer" onclick="openDetailModal(${safeTask})">
+            <div class="cursor-pointer" onclick="openDetailModal('${encodedTask}')">
                 <p class="font-bold text-sm">${task.title}</p>
                 <p class="text-[11px] text-slate-500 mt-1">${task.notes || ''}</p>
                 ${task.deadline ? `<p class="text-[10px] text-rose-600 font-bold mt-1">🗓️ ${task.deadline}</p>` : ''}
             </div>
-            <div class="mt-3 pt-2 border-t">
+            <div class="mt-2 pt-2 border-t">
+                <p class="text-[9px] font-bold text-slate-400 mb-2">👤 ${task.worker_name || 'Anon'}</p>
                 ${isMasterUser() ? `
                     <input type="text" id="master-input-${task.id}" value="${task.master_notes || ''}" class="w-full text-[10px] p-1 border rounded mb-1" placeholder="Arahan master...">
                     <button onclick="submitMasterNote(${task.id})" class="text-[9px] bg-amber-500 text-white px-2 py-0.5 rounded w-full">Simpan Arahan</button>
@@ -150,7 +147,7 @@ function renderVerticalProjects(tasks) {
     container.innerHTML = tasks.map(t => `
         <div class="bg-white p-4 rounded-xl border flex justify-between items-center">
             <p class="font-bold text-sm">${t.title}</p>
-            <span class="text-[10px] bg-slate-100 px-2 py-1 rounded">${t.worker_name || 'Anon'}</span>
+            <span class="text-[10px] bg-slate-100 px-2 py-1 rounded font-bold">👤 ${t.worker_name || 'Anon'}</span>
         </div>
     `).join('');
 }
@@ -160,5 +157,4 @@ window.updateStatus = async (taskId, newStatus) => {
     fetchTasks();
 };
 
-// Pastikan skrip berjalan setelah halaman selesai dimuat sepenuhnya
 window.addEventListener('load', checkSession);
