@@ -15,7 +15,7 @@ function isMasterUser() {
 }
 
 // =======================================================
-// MODAL CONTROLLER (ADD TASK & DETAIL)
+// MODAL CONTROLLER
 // =======================================================
 window.openModal = () => document.getElementById('taskModal').classList.remove('hidden');
 window.closeModal = () => document.getElementById('taskModal').classList.add('hidden');
@@ -26,11 +26,7 @@ window.submitModalTask = async () => {
     const deadline = document.getElementById('modalTaskDeadline').value;
     
     if (!title) return alert("Judul wajib diisi!");
-    
-    const { error } = await supabaseClient.from('tasks').insert([{ 
-        title, notes, deadline, status: 'todo', worker_name: currentWorker 
-    }]);
-    
+    const { error } = await supabaseClient.from('tasks').insert([{ title, notes, deadline, status: 'todo', worker_name: currentWorker }]);
     if (error) alert(error.message);
     else { closeModal(); fetchTasks(); }
 };
@@ -50,40 +46,6 @@ window.openDetailModal = (task) => {
 };
 
 // =======================================================
-// LOGIN & SESSION LOGIC
-// =======================================================
-window.handleLogin = function() {
-    const input = document.getElementById('usernameInput');
-    const name = input ? input.value.trim() : '';
-    if (!name) return alert('Nama wajib diisi!');
-    localStorage.setItem('worker_name', name);
-    currentWorker = name;
-    checkSession();
-};
-
-window.handleLogout = function() {
-    localStorage.removeItem('worker_name');
-    window.location.reload();
-};
-
-function checkSession() {
-    const loginPanel = document.getElementById('login-panel');
-    const mainTracker = document.getElementById('main-tracker');
-    if (currentWorker) {
-        if (loginPanel) loginPanel.classList.add('hidden');
-        if (mainTracker) mainTracker.classList.remove('hidden');
-        const userDisplay = document.getElementById('currentUserDisplay');
-        const avatarLetter = document.getElementById('avatarLetter');
-        if (userDisplay) userDisplay.innerText = currentWorker + (isMasterUser() ? " (Master)" : "");
-        if (avatarLetter) avatarLetter.innerText = currentWorker.charAt(0).toUpperCase();
-        fetchTasks();
-    } else {
-        if (loginPanel) loginPanel.classList.remove('hidden');
-        if (mainTracker) mainTracker.classList.add('hidden');
-    }
-}
-
-// =======================================================
 // FETCH & RENDER
 // =======================================================
 async function fetchTasks() {
@@ -99,30 +61,51 @@ function renderTasks(tasks) {
     tasks.forEach(task => {
         const card = document.createElement('div');
         card.className = "bg-white p-4 rounded-xl border shadow-sm";
+        // Stringify aman untuk data JSON
         const safeTask = JSON.stringify(task).replace(/"/g, '&quot;');
         
         card.innerHTML = `
             <div class="cursor-pointer" onclick="openDetailModal(${safeTask})">
                 <p class="font-bold text-sm">${task.title}</p>
-                ${task.deadline ? `<p class="text-[10px] text-rose-600 font-bold">🗓️ ${task.deadline}</p>` : ''}
+                <p class="text-[11px] text-slate-500 mt-1">${task.notes || ''}</p>
+                ${task.deadline ? `<p class="text-[10px] text-rose-600 font-bold mt-1">🗓️ ${task.deadline}</p>` : ''}
             </div>
-            ${isMasterUser() ? `<input type="text" id="master-input-${task.id}" class="w-full text-[10px] p-1 border rounded my-1" placeholder="Arahan master...">
-            <button onclick="submitMasterNote(${task.id})" class="text-[9px] bg-amber-500 text-white px-2 py-0.5 rounded">Simpan</button>` : ''}
-            <button onclick="updateStatus(${task.id}, '${task.status === 'todo' ? 'in_progress' : task.status === 'in_progress' ? 'done' : 'todo'}')" class="mt-2 w-full text-[10px] font-bold text-blue-600 bg-blue-50 py-1 rounded">Next →</button>
+            <div class="mt-3 pt-2 border-t">
+                ${isMasterUser() ? `
+                    <input type="text" id="master-input-${task.id}" value="${task.master_notes || ''}" class="w-full text-[10px] p-1 border rounded mb-1" placeholder="Arahan master...">
+                    <button onclick="submitMasterNote(${task.id})" class="text-[9px] bg-amber-500 text-white px-2 py-0.5 rounded w-full">Simpan Arahan</button>
+                ` : `<p class="text-[10px] text-slate-400 italic mb-1">${task.master_notes ? 'Master: ' + task.master_notes : ''}</p>`}
+                
+                <button onclick="updateStatus(${task.id}, '${task.status === 'todo' ? 'in_progress' : task.status === 'in_progress' ? 'done' : 'todo'}')" class="mt-2 w-full text-[10px] font-bold text-blue-600 bg-blue-50 py-1 rounded">Next →</button>
+            </div>
         `;
         if (lists[task.status]) lists[task.status].appendChild(card);
     });
 }
 
-window.switchTab = function(tabName) {
-    document.getElementById('boards-view-container').classList.toggle('hidden', tabName !== 'boards');
-    document.getElementById('projects-page').classList.toggle('hidden', tabName === 'boards');
-    document.getElementById('customTitle').innerText = tabName === 'boards' ? "Dashboards" : "All Projects";
-    if (tabName === 'boards') fetchTasks();
-    else fetchProjects();
+// =======================================================
+// LOGIN & SESSION
+// =======================================================
+window.handleLogin = function() {
+    const name = document.getElementById('usernameInput').value.trim();
+    if (!name) return alert('Nama wajib diisi!');
+    localStorage.setItem('worker_name', name);
+    currentWorker = name;
+    checkSession();
 };
 
-window.updateStatus = async function(taskId, newStatus) {
+function checkSession() {
+    const worker = localStorage.getItem('worker_name');
+    if (worker) {
+        document.getElementById('login-panel').classList.add('hidden');
+        document.getElementById('main-tracker').classList.remove('hidden');
+        document.getElementById('currentUserDisplay').innerText = worker;
+        document.getElementById('avatarLetter').innerText = worker.charAt(0).toUpperCase();
+        fetchTasks();
+    }
+}
+
+window.updateStatus = async (taskId, newStatus) => {
     await supabaseClient.from('tasks').update({ status: newStatus }).eq('id', taskId);
     fetchTasks();
 };
