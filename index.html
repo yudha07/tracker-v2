@@ -4,76 +4,79 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>PT Gatras & Cv Intim Project Tracker</title>
-
-  <link rel="icon" href="data:,">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     body { font-family: 'Plus Jakarta Sans', sans-serif; }
-    .kedip-cepat { animation: blinker 0.7s linear infinite; }
-    @keyframes blinker { 50% { opacity: 0; } }
-    /* Scrollbar mobile friendly */
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
   </style>
 </head>
-<body class="bg-[#F8F9FD] text-[#1E293B] min-h-screen antialiased">
+<body class="bg-[#F8F9FD] text-[#1E293B] min-h-screen">
 
   <div id="login-panel" class="fixed inset-0 bg-[#F8F9FD] flex items-center justify-center p-4 z-50">
-    <div class="bg-white p-8 rounded-3xl shadow-xl shadow-blue-100/40 border border-slate-100 w-full max-w-md">
-      <div class="flex justify-center mb-4">
-        <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white text-xl font-bold">G</div>
-      </div>
-      <h2 class="text-xl font-bold text-center text-slate-800 mb-1">Project Tracker</h2>
-      <p class="text-sm text-slate-400 text-center mb-6">Masukkan nama Anda untuk melanjutkan</p>
-      <div class="space-y-4">
-        <input type="text" id="usernameInput" placeholder="Ketik nama Anda..." class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none">
-        <button onclick="handleLogin()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl shadow-lg shadow-blue-500/20">Masuk</button>
-      </div>
+    <div class="bg-white p-8 rounded-3xl shadow-xl w-full max-w-md border border-slate-100">
+      <h2 class="text-xl font-bold text-center mb-6">Project Tracker</h2>
+      <input type="text" id="usernameInput" placeholder="Ketik nama Anda..." class="w-full bg-slate-50 border rounded-xl px-4 py-3 mb-4 outline-none">
+      <button onclick="handleLogin()" class="w-full bg-blue-600 text-white font-bold py-3 rounded-xl">Masuk</button>
     </div>
   </div>
 
   <div id="main-tracker" class="w-full min-h-screen flex flex-col md:flex-row hidden pb-20 md:pb-0">
-    
-    <aside class="w-64 bg-white border-r border-slate-100 p-6 hidden md:flex flex-col justify-between shrink-0">
+    <aside class="w-64 bg-white border-r p-6 hidden md:flex flex-col justify-between">
       <div class="space-y-8">
-        <div class="flex items-center gap-3"><div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold">G</div> <span class="font-bold">Gatras & Intim</span></div>
+        <div class="font-bold text-lg">Gatras & Intim</div>
         <nav class="space-y-2">
-          <button id="menu-boards" onclick="switchTab('boards')" class="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-bold text-blue-600 bg-blue-50 rounded-xl">📋 Boards</button>
-          <button id="menu-projects" onclick="switchTab('projects')" class="w-full flex items-center gap-3 px-3 py-2.5 text-sm font-semibold text-slate-400">📂 Projects</button>
+          <button onclick="switchTab('boards')" class="w-full text-left px-3 py-2 font-bold text-blue-600 bg-blue-50 rounded-xl">📋 Boards</button>
+          <button onclick="switchTab('projects')" class="w-full text-left px-3 py-2 font-semibold text-slate-400">📂 Projects</button>
         </nav>
       </div>
       <div class="bg-slate-50 p-3 rounded-2xl flex items-center gap-3">
-        <div class="w-9 h-9 bg-blue-600 rounded-full text-white flex items-center justify-center font-bold" id="avatarLetter">Y</div>
-        <div class="overflow-hidden"><p class="text-xs font-bold truncate" id="currentUserDisplay"></p></div>
-        <button onclick="handleLogout()" class="text-slate-400 hover:text-red-500 text-xs ml-auto">Logout</button>
+        <div class="w-9 h-9 bg-blue-600 rounded-full text-white flex items-center justify-center font-bold" id="avatarLetter"></div>
+        <p class="text-xs font-bold truncate" id="currentUserDisplay"></p>
+        <button onclick="handleLogout()" class="text-slate-400 text-xs ml-auto">Exit</button>
       </div>
     </aside>
 
-    <main class="flex-1 p-4 md:p-8 overflow-y-auto">
+    <main class="flex-1 p-4 md:p-8">
       <div class="flex justify-between items-center mb-6">
-        <h1 id="customTitle" class="text-xl font-bold">Design Boards</h1>
-        <button onclick="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg shadow-blue-500/20">+ Add</button>
+        <h1 id="customTitle" class="text-xl font-bold">Dashboards</h1>
+        <button onclick="openModal()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg">+ Add</button>
       </div>
 
-      <div id="boards-view-container" class="space-y-6">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="bg-amber-50/30 border border-amber-100 rounded-2xl p-4"><div class="flex justify-between mb-3"><h2 class="text-xs font-bold uppercase text-amber-700">To Do</h2><span id="todo-count" class="text-[10px] bg-white px-2 py-0.5 rounded-full border">0</span></div><div id="todo-list" class="space-y-3"></div></div>
-          <div class="bg-indigo-50/30 border border-indigo-100 rounded-2xl p-4"><div class="flex justify-between mb-3"><h2 class="text-xs font-bold uppercase text-indigo-700">In Progress</h2><span id="inprogress-count" class="text-[10px] bg-white px-2 py-0.5 rounded-full border">0</span></div><div id="inprogress-list" class="space-y-3"></div></div>
-          <div class="bg-pink-50/30 border border-pink-100 rounded-2xl p-4"><div class="flex justify-between mb-3"><h2 class="text-xs font-bold uppercase text-pink-700">Done</h2><span id="done-count" class="text-[10px] bg-white px-2 py-0.5 rounded-full border">0</span></div><div id="done-list" class="space-y-3"></div></div>
-        </div>
+      <div id="boards-view-container" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="bg-amber-50/30 border rounded-2xl p-4"><h2 class="text-xs font-bold mb-3 uppercase text-amber-700">To Do</h2><div id="todo-list" class="space-y-3"></div></div>
+        <div class="bg-indigo-50/30 border rounded-2xl p-4"><h2 class="text-xs font-bold mb-3 uppercase text-indigo-700">In Progress</h2><div id="inprogress-list" class="space-y-3"></div></div>
+        <div class="bg-pink-50/30 border rounded-2xl p-4"><h2 class="text-xs font-bold mb-3 uppercase text-pink-700">Done</h2><div id="done-list" class="space-y-3"></div></div>
       </div>
 
       <div id="projects-page" class="hidden space-y-4">
         <div id="projects-vertical-list" class="space-y-4"></div>
       </div>
     </main>
+  </div>
 
-    <div class="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 flex justify-around p-3 z-40">
-      <button onclick="switchTab('boards')" class="text-xs font-bold text-slate-600 flex flex-col items-center gap-1">📋 Boards</button>
-      <button onclick="switchTab('projects')" class="text-xs font-bold text-slate-600 flex flex-col items-center gap-1">📂 Projects</button>
-      <button onclick="handleLogout()" class="text-xs font-bold text-red-500 flex flex-col items-center gap-1">🚪 Exit</button>
+  <div id="taskModal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-sm">
+      <h2 class="text-lg font-bold mb-4">Tambah Project</h2>
+      <input type="text" id="modalTaskTitle" placeholder="Judul Project" class="w-full bg-slate-50 border rounded-xl p-3 mb-3 outline-none">
+      <textarea id="modalTaskNotes" placeholder="Deskripsi" class="w-full bg-slate-50 border rounded-xl p-3 mb-3 outline-none"></textarea>
+      <input type="date" id="modalTaskDeadline" class="w-full bg-slate-50 border rounded-xl p-3 mb-4 outline-none">
+      <div class="flex gap-2">
+        <button onclick="closeModal()" class="flex-1 py-3 text-slate-500">Batal</button>
+        <button onclick="submitModalTask()" class="flex-1 py-3 bg-blue-600 text-white rounded-xl font-bold">Simpan</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="detailModal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-sm">
+      <h2 id="detailTitle" class="text-lg font-bold mb-2"></h2>
+      <p id="detailNotes" class="text-sm text-slate-600 mb-4"></p>
+      <div class="bg-amber-50 p-3 rounded-xl mb-4">
+        <p class="text-[10px] font-bold text-amber-700 uppercase">Arahan Master:</p>
+        <p id="detailMasterNotes" class="text-xs text-amber-900 mt-1 italic"></p>
+      </div>
+      <button onclick="document.getElementById('detailModal').classList.add('hidden')" class="w-full py-3 bg-slate-100 rounded-xl font-bold">Tutup</button>
     </div>
   </div>
 
